@@ -339,10 +339,9 @@ class SqurePeg
 
 extension SqurePeg: Circularity
 {
-    var radius: Double {
-        get {
-            return sqrt(pow(width / 2, 2) * 2)
-        }
+    var radius: Double
+    {
+        return sqrt(pow(width / 2, 2) * 2)
     }
 }
 
@@ -357,34 +356,226 @@ for i in 5...10
 
 
 
+//Iterator
+struct NovellasCollection<T>
+{
+    let novellas: [T]
+}
+
+
+extension NovellasCollection: SequenceType
+{
+    typealias Generator = AnyGenerator<T>
+    
+    
+    func generate() -> AnyGenerator<T>
+    {
+        var i = 0
+        return anyGenerator{ return i >= self.novellas.count ? nil : self.novellas[i++] }
+    }
+}
+
+
+let greatNovellas = NovellasCollection(novellas: ["Mist", "Abc"])
+for novella in greatNovellas
+{
+    print("I've read:\(novella)")
+}
 
 
 
+//Observer
+protocol PropertyObserver: class
+{
+    func willChangePropertyName(propertyName: String, newPropertyValue: AnyObject?)
+    func didChangePropertyName(propertyName: String, oldPropertyValue: AnyObject?)
+}
+
+
+class TestChambers
+{
+    weak var observer: PropertyObserver?
+    
+    var testChamberNumber: Int = 0
+    {
+        willSet{
+            observer?.willChangePropertyName("testChamberNumber", newPropertyValue: newValue)
+        }
+        didSet{
+            observer?.didChangePropertyName("testChamberNumber", oldPropertyValue: oldValue)
+        }
+    }
+}
+
+
+class Observer: PropertyObserver
+{
+    func willChangePropertyName(propertyName: String, newPropertyValue: AnyObject?)
+    {
+        if newPropertyValue as? Int == 1
+        {
+            print("newValue: \(newPropertyValue!)")
+        }
+    }
+    
+    
+    func didChangePropertyName(propertyName: String, oldPropertyValue: AnyObject?)
+    {
+        if oldPropertyValue as? Int == 0
+        {
+            print("oldValue: \(oldPropertyValue!)")
+        }
+    }
+}
+
+
+var observerInstance = Observer()
+var testChambers = TestChambers()
+testChambers.observer = observerInstance
+testChambers.testChamberNumber = 1
 
 
 
+//State
+class Context
+{
+    private var state: State = UnauthorizedState()
+    
+    
+    var isAuthorized: Bool
+    {
+        return state.isAuthorized(self)
+    }
+    
+    var userId: String?
+    {
+        return state.userId(self)
+    }
+    
+    
+    func changeStateToAuthorized(userId: String)
+    {
+        state = AuthorizedState(userId: userId)
+    }
+    
+    
+    func changeStateToUnauthorized()
+    {
+        state = UnauthorizedState()
+    }
+}
+
+
+protocol State
+{
+    func isAuthorized(context: Context) -> Bool
+    func userId(context: Context) -> String?
+}
+
+
+class UnauthorizedState: State
+{
+    func isAuthorized(context: Context) -> Bool
+    {
+        return false
+    }
+    
+    
+    func userId(context: Context) -> String?
+    {
+        return nil
+    }
+}
+
+
+class AuthorizedState: State
+{
+    let userId: String
+    
+    
+    init(userId: String)
+    {
+        self.userId = userId
+    }
+    
+    
+    func isAuthorized(context: Context) -> Bool
+    {
+        return true
+    }
+    
+    
+    func userId(context: Context) -> String?
+    {
+        return userId
+    }
+}
+
+
+let context = Context()
+context.isAuthorized
+context.userId
+context.changeStateToAuthorized("admin")
+context.isAuthorized
+context.userId
+context.changeStateToUnauthorized()
+context.isAuthorized
+context.userId
 
 
 
+//Builder
+class DeathStarBuilder
+{
+    var x: Double?
+    var y: Double?
+    var z: Double?
+    
+    typealias BuilderClosure = (DeathStarBuilder) -> ()
+    
+    
+    init(builderClosure: BuilderClosure)
+    {
+        builderClosure(self)
+    }
+}
 
 
+struct DeathStar: CustomStringConvertible
+{
+    let x: Double
+    let y: Double
+    let z: Double
+    
+    
+    init?(builder: DeathStarBuilder)
+    {
+        if let x = builder.x, y = builder.y, z = builder.z
+        {
+            self.x = x
+            self.y = y
+            self.z = z
+        }
+        else
+        {
+            return nil
+        }
+    }
+    
+    
+    var description: String
+    {
+        return "Death Star at (x:\(x) y:\(y) z:\(z))"
+    }
+}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+let empire = DeathStarBuilder{  builder in
+    builder.x = 0.1
+    builder.y = 0.2
+    builder.z = 0.3
+}
+let deathStar = DeathStar(builder: empire)
 
 
 
