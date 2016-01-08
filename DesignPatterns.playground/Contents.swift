@@ -579,6 +579,312 @@ let deathStar = DeathStar(builder: empire)
 
 
 
+//Prototype
+class ChungasRevengDisplay
+{
+    var name: String?
+    let font: String
+    
+    
+    init(font: String)
+    {
+        self.font = font
+    }
+    
+    
+    func clone() -> ChungasRevengDisplay
+    {
+        return ChungasRevengDisplay(font: self.font)
+    }
+}
 
+let prototype = ChungasRevengDisplay(font: "GotanProject")
+
+let Philippe = prototype.clone()
+Philippe.name = "Philippe"
+
+let ChristoPh = prototype.clone()
+ChristoPh.name = "ChristoPh"
+
+let Eduardo = prototype.clone()
+Eduardo.name = "Eduardo"
+
+
+
+//Singleton
+class DeathStarSuperlaser
+{
+    static let sharedInstance = DeathStarSuperlaser()
+    
+    
+    private init() {}
+}
+
+let laser = DeathStarSuperlaser.sharedInstance
+
+
+
+//Adapter
+protocol OlderDeathStartSuperLaserAiming
+{
+    var angleV: NSNumber { get }
+    var angleH: NSNumber { get }
+}
+
+
+struct DeathStarSuperlaserTarget
+{
+    let angleHoriztonal: Double
+    let angleVeritical: Double
+    
+    
+    init(angleHoriztonal: Double, angleVeritical: Double)
+    {
+        self.angleHoriztonal = angleHoriztonal
+        self.angleVeritical = angleVeritical
+    }
+}
+
+
+struct OldDeathStarSuperlaserTarget: OlderDeathStartSuperLaserAiming
+{
+    private let target: DeathStarSuperlaserTarget
+    
+    var angleH: NSNumber {
+        return target.angleHoriztonal
+    }
+    
+    var angleV: NSNumber {
+        return target.angleVeritical
+    }
+    
+    
+    init(_ target: DeathStarSuperlaserTarget)
+    {
+        self.target = target
+    }
+}
+
+
+let target = DeathStarSuperlaserTarget(angleHoriztonal: 14.0, angleVeritical: 12.0)
+let oldFormat = OldDeathStarSuperlaserTarget(target)
+
+oldFormat.angleH
+oldFormat.angleV
+
+
+
+//Bridge
+protocol Appliance
+{
+    func run()
+}
+
+
+protocol Switch
+{
+    var appliance: Appliance {get set}
+    
+    func turnOn()
+}
+
+
+class RemoteControl: Switch
+{
+    var appliance: Appliance
+    
+    
+    init(appliance: Appliance)
+    {
+        self.appliance = appliance
+    }
+    
+    
+    func turnOn()
+    {
+        self.appliance.run()
+    }
+}
+
+
+class TV: Appliance
+{
+    func run()
+    {
+        print("tv turned on")
+    }
+}
+
+
+class VacuumCleaner: Appliance
+{
+    func run()
+    {
+        print("vacuum cleaner turned on")
+    }
+}
+
+
+var tvRemoteControl = RemoteControl(appliance: TV())
+tvRemoteControl.turnOn()
+
+var fancyVacuumCleanerRemoteControl = RemoteControl(appliance: VacuumCleaner())
+fancyVacuumCleanerRemoteControl.turnOn()
+
+
+
+//Composite
+protocol Shape
+{
+    func draw(fillColor: String)
+}
+
+
+class Square: Shape
+{
+    func draw(fillColor: String)
+    {
+        print("Drawing s Square with color \(fillColor)")
+    }
+}
+
+
+class Circle: Shape
+{
+    func draw(fillColor: String)
+    {
+        print("Drawing a Circle with color \(fillColor)")
+    }
+}
+
+
+class Whiteboard: Shape
+{
+    lazy var shapes = [Shape]()
+    
+    init(_ shapes: Shape...)
+    {
+        self.shapes = shapes
+    }
+    
+    func draw(fillColor: String)
+    {
+        for shape in shapes
+        {
+            shape.draw(fillColor)
+        }
+    }
+}
+
+
+var whiteBoard = Whiteboard(Circle(), Square())
+whiteBoard.draw("Red")
+
+
+
+//Facade
+class Eternal
+{
+    class func setObject(value: AnyObject!, forKey defaultName: String!)
+    {
+        let defaults = NSUserDefaults.standardUserDefaults()
+        defaults.setObject(value, forKey: defaultName)
+        defaults.synchronize()
+    }
+    
+    
+    class func objectForKey(defaultName: String!) -> AnyObject!
+    {
+        let defaults = NSUserDefaults.standardUserDefaults()
+        return defaults.objectForKey(defaultName)
+    }
+}
+
+Eternal.setObject("Disconnect me. I'd rather be nothing", forKey: "Bishop")
+Eternal.objectForKey("Bishop")
+
+
+
+//Protection Proxy
+protocol DoorOperator
+{
+    func openDoors(door: String) -> String
+}
+
+
+class HAL9000: DoorOperator
+{
+    func openDoors(door: String) -> String
+    {
+        return "HAL9000: Affirmative, Dave. I read you. Opened \(door)"
+    }
+}
+
+
+class CurrentComputer: DoorOperator
+{
+    private var computer: HAL9000!
+    
+    
+    func authenticateWithPassword(pass: String) -> Bool
+    {
+        guard pass == "pass" else {
+            return false
+        }
+        
+        computer = HAL9000()
+        
+        return true
+    }
+    
+    func openDoors(door: String) -> String
+    {
+        guard computer != nil else {
+            return "Access Denied. I'm afraid I can't do that."
+        }
+        
+        return computer.openDoors(door)
+    }
+}
+
+
+let computer = CurrentComputer()
+let doors = "Pod Bay Doors"
+computer.openDoors(doors)
+
+computer.authenticateWithPassword("pass")
+computer.openDoors(doors)
+
+
+
+//Virtual Proxy
+protocol HEVSuitMedicalAid
+{
+    func administerMorphine() -> String
+}
+
+
+class HEVSuit: HEVSuitMedicalAid
+{
+    func administerMorphine() -> String
+    {
+        return "Morphine administered."
+    }
+}
+
+
+class HEVSuitHumanInterface: HEVSuitMedicalAid
+{
+    lazy private var physicalSuit = HEVSuit()
+    
+    func administerMorphine() -> String
+    {
+        return physicalSuit.administerMorphine()
+    }
+}
+
+
+let humanInterface = HEVSuitHumanInterface()
+humanInterface.administerMorphine()
 
 
